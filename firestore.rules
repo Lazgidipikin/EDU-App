@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - role: string (required, enum: admin, teacher, parent, student)
+    //   - fullName: string (required)
+    //   - phoneNumber: string (optional)
+    //   - studentId: string (optional, for students)
+    //   - childIds: list (optional, for parents)
+    //   - department: string (optional, for staff)
+    //   - subjects: list (optional, for teachers)
+    //
+    // Collection: students
+    // Fields:
+    //   - fullName: string (required)
+    //   - dob: string (required, date format)
+    //   - gender: string (required, enum: male, female, other)
+    //   - class: string (required)
+    //   - arm: string (required)
+    //   - admissionNumber: string (required)
+    //   - studentId: string (required)
+    //   - feeStatus: string (enum: paid, partial, unpaid)
+    //   - academicStanding: string (enum: excellent, good, average, at-risk, critical)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "gabrieloseoriakhi@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Users can only read their own profile, unless they are an admin
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Only admins can create users, or a user can create their own profile with 'student' role initially (if not exists)
+      allow create: if isAuthenticated() && (
+        isAdmin() || 
+        (isOwner(userId) && request.resource.data.role in ['student', 'parent'])
+      );
+
+      // Only admins can update roles. Users can update their own info but not their role.
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (isOwner(userId) && request.resource.data.role == resource.data.role)
+      );
+    }
+
+    match /students/{studentId} {
+      // Admins and teachers can read all students. Parents can read their children (logic would need childIds check)
+      // For now, let's allow authenticated users to read students if they are staff.
+      allow read: if isAdmin() || isTeacher();
+      
+      // Only admins can create or delete students
+      allow write: if isAdmin();
+    }
+
+    match /grades/{gradeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /feeItems/{feeItemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

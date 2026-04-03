@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile information including role and contact details.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "teacher", "parent", "student"] },
+        "fullName": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "studentId": { "type": "string" },
+        "childIds": { "type": "array", "items": { "type": "string" } },
+        "department": { "type": "string" },
+        "subjects": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["uid", "email", "role", "fullName"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record including enrollment and academic status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "address": { "type": "string" },
+        "guardianContact": { "type": "string" },
+        "class": { "type": "string" },
+        "arm": { "type": "string" },
+        "admissionNumber": { "type": "string" },
+        "studentId": { "type": "string" },
+        "feeStatus": { "type": "string", "enum": ["paid", "partial", "unpaid"] },
+        "academicStanding": { "type": "string", "enum": ["excellent", "good", "average", "at-risk", "critical"] }
+      },
+      "required": ["fullName", "dob", "gender", "class", "arm", "admissionNumber", "studentId"]
+    },
+    "Grade": {
+      "title": "Grade",
+      "description": "Student grade for a specific subject and term.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "subject": { "type": "string" },
+        "term": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "ca": { "type": "number" },
+        "assignment": { "type": "number" },
+        "midTerm": { "type": "number" },
+        "exam": { "type": "number" },
+        "total": { "type": "number" },
+        "grade": { "type": "string" },
+        "remarks": { "type": "string" }
+      },
+      "required": ["studentId", "subject", "term", "academicYear", "total", "grade"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance record for a student.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["present", "absent", "late"] },
+        "session": { "type": "string" },
+        "reason": { "type": "string" }
+      },
+      "required": ["studentId", "date", "status"]
+    },
+    "FeeItem": {
+      "title": "Fee Item",
+      "description": "A specific fee category and amount.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string", "enum": ["tuition", "hostel", "lab", "uniform", "other"] }
+      },
+      "required": ["name", "amount", "category"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "A fee payment transaction.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["success", "pending", "failed"] },
+        "reference": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["studentId", "amount", "date", "status", "reference"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents."
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student records."
+    },
+    "/grades/{gradeId}": {
+      "schema": "Grade",
+      "description": "Student grades."
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Daily attendance records."
+    },
+    "/feeItems/{feeItemId}": {
+      "schema": "FeeItem",
+      "description": "Available fee items."
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Fee payment transactions."
+    }
+  }
+}
