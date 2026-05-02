@@ -9,16 +9,129 @@ import {
   Clock, 
   AlertCircle,
   ArrowUpRight,
-  Wallet
+  Wallet,
+  Lock
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { cn, formatCurrency } from '../lib/utils';
 import { motion } from 'motion/react';
+import { useFirebase } from '../contexts/FirebaseContext';
 
 export const Fees: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'history' | 'schedule'>('overview');
+  const { userProfile } = useFirebase();
+  const isAdmin = userProfile?.role === 'admin';
 
+  // Parent view — simplified own-child fee summary
+  if (!isAdmin) {
+    return <ParentFeesView />;
+  }
+
+  // Admin view — full financial management
+  return <AdminFeesView activeTab={activeTab} setActiveTab={setActiveTab} />;
+};
+
+/* ─────────────────────────────────────────────────────────────
+   Parent-facing view: own child's fee status only
+───────────────────────────────────────────────────────────── */
+const ParentFeesView: React.FC = () => {
+  return (
+    <div className="space-y-8">
+      {/* Header banner */}
+      <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-white flex items-start justify-between">
+        <div>
+          <p className="text-blue-100 text-sm font-medium mb-1">Outstanding Balance</p>
+          <p className="text-4xl font-black">{formatCurrency(45000)}</p>
+          <p className="text-blue-200 text-xs mt-2">Term 2 · 2023/2024 Academic Year</p>
+        </div>
+        <div className="bg-white/20 p-3 rounded-xl">
+          <Wallet className="h-7 w-7" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Fee breakdown */}
+        <Card title="Fee Breakdown" description="What is owed for this term">
+          <div className="space-y-3 mt-4">
+            {[
+              { label: 'Tuition Fee', amount: 150000, paid: true },
+              { label: 'Hostel Fee', amount: 75000, paid: false },
+              { label: 'Lab Fee', amount: 15000, paid: true },
+              { label: 'Uniform', amount: 25000, paid: true },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between p-3 rounded-xl border border-slate-100"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center",
+                    item.paid ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"
+                  )}>
+                    {item.paid
+                      ? <CheckCircle2 className="h-4 w-4" />
+                      : <AlertCircle className="h-4 w-4" />}
+                  </div>
+                  <span className="text-sm font-medium text-slate-800">{item.label}</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-slate-900">{formatCurrency(item.amount)}</p>
+                  <p className={cn("text-[10px] font-semibold uppercase", item.paid ? "text-green-600" : "text-red-500")}>
+                    {item.paid ? 'Paid' : 'Outstanding'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Recent payments */}
+        <Card title="Payment History" description="Your recent transactions">
+          <div className="space-y-3 mt-4">
+            {[
+              { ref: 'PAY-001', amount: 150000, date: 'Mar 01, 2024', item: 'Tuition Fee' },
+              { ref: 'PAY-002', amount: 15000,  date: 'Feb 15, 2024', item: 'Lab Fee' },
+              { ref: 'PAY-003', amount: 25000,  date: 'Jan 10, 2024', item: 'Uniform' },
+            ].map((tx) => (
+              <div key={tx.ref} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{tx.item}</p>
+                    <p className="text-[10px] text-slate-400">{tx.ref} · {tx.date}</p>
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-slate-900">{formatCurrency(tx.amount)}</p>
+              </div>
+            ))}
+          </div>
+          <Button variant="ghost" className="w-full mt-4 text-blue-600">View All Receipts</Button>
+        </Card>
+      </div>
+
+      {/* Deadline notice */}
+      <div className="flex items-center gap-4 p-4 rounded-xl border border-amber-200 bg-amber-50">
+        <Clock className="h-5 w-5 text-amber-600 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-amber-800">Payment Reminder</p>
+          <p className="text-xs text-amber-600">Hostel fee of {formatCurrency(75000)} is due in <strong>3 days</strong>. Please complete payment to avoid late fees.</p>
+        </div>
+        <Button size="sm" className="ml-auto shrink-0 bg-amber-600 hover:bg-amber-700">Pay Now</Button>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────
+   Admin-facing view: full school-wide financial management
+───────────────────────────────────────────────────────────── */
+const AdminFeesView: React.FC<{
+  activeTab: 'overview' | 'history' | 'schedule';
+  setActiveTab: (t: 'overview' | 'history' | 'schedule') => void;
+}> = ({ activeTab, setActiveTab }) => {
   return (
     <div className="space-y-8">
       {/* Tabs */}

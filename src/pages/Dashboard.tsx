@@ -27,6 +27,7 @@ import { cn } from '../lib/utils';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Student } from '../types';
+import { useFirebase } from '../contexts/FirebaseContext';
 
 const data = [
   { name: 'Term 1', avg: 72 },
@@ -44,6 +45,8 @@ const attendanceData = [
 
 export const Dashboard: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
+  const { userProfile } = useFirebase();
+  const isAdmin = userProfile?.role === 'admin';
   const atRiskCount = MOCK_PREDICTIONS.filter(p => p.riskLevel !== 'on-track').length;
 
   useEffect(() => {
@@ -66,7 +69,12 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className={cn(
+        "grid gap-6",
+        isAdmin
+          ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+          : "grid-cols-1 md:grid-cols-3"
+      )}>
         <StatCard 
           title="Total Students" 
           value={totalStudents.toString()} 
@@ -88,13 +96,16 @@ export const Dashboard: React.FC = () => {
           trend="-1.2%" 
           color="purple" 
         />
-        <StatCard 
-          title="Fees Collected" 
-          value="₦4.2M" 
-          icon={CreditCard} 
-          trend="+12%" 
-          color="orange" 
-        />
+        {/* Admin-only: Financial overview */}
+        {isAdmin && (
+          <StatCard 
+            title="Fees Collected" 
+            value="₦4.2M" 
+            icon={CreditCard} 
+            trend="+12%" 
+            color="orange" 
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -195,13 +206,16 @@ export const Dashboard: React.FC = () => {
               desc="5 students below 60% attendance" 
               time="2h ago" 
             />
-            <AlertItem 
-              icon={Clock} 
-              color="amber" 
-              title="Fee Deadline" 
-              desc="Term 2 fee deadline in 3 days" 
-              time="5h ago" 
-            />
+            {/* Admin-only: Financial alert */}
+            {isAdmin && (
+              <AlertItem 
+                icon={Clock} 
+                color="amber" 
+                title="Fee Deadline" 
+                desc="Term 2 fee deadline in 3 days" 
+                time="5h ago" 
+              />
+            )}
             <AlertItem 
               icon={CheckCircle2} 
               color="green" 

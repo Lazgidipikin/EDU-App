@@ -6,12 +6,31 @@ import {
   Globe, 
   Database, 
   Smartphone,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
+import { useFirebase } from '../contexts/FirebaseContext';
 
 export const Settings: React.FC = () => {
+  const { userProfile } = useFirebase();
+
+  // Page-level guard (defence in depth — RoleGuard in App.tsx is the primary guard)
+  if (userProfile?.role !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="bg-red-50 p-5 rounded-2xl">
+          <Lock className="h-12 w-12 text-red-400" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-800">Access Restricted</h2>
+        <p className="text-slate-500 text-sm text-center max-w-xs">
+          This section is only available to Administrators. Please contact your school admin if you need access.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl space-y-8">
       <Card title="General Configuration" description="Manage school branding and system-wide settings">

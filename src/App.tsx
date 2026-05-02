@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { RoleGuard } from './components/RoleGuard';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { Students } from './pages/Students';
@@ -36,14 +37,55 @@ function AppRoutes() {
     <Layout userRole={userProfile?.role || 'student'}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/students" element={<Students />} />
+
+        {/* Admin + Teacher only */}
+        <Route
+          path="/students"
+          element={
+            <RoleGuard allowedRoles={['admin', 'teacher']}>
+              <Students />
+            </RoleGuard>
+          }
+        />
+
+        {/* All roles */}
         <Route path="/grades" element={<Grades />} />
-        <Route path="/attendance" element={<AttendancePage />} />
-        <Route path="/fees" element={<Fees />} />
+
+        {/* Admin + Teacher + Parent only (no students) */}
+        <Route
+          path="/attendance"
+          element={
+            <RoleGuard allowedRoles={['admin', 'teacher', 'parent']}>
+              <AttendancePage />
+            </RoleGuard>
+          }
+        />
+
+        {/* Admin + Parent only */}
+        <Route
+          path="/fees"
+          element={
+            <RoleGuard allowedRoles={['admin', 'parent']}>
+              <Fees />
+            </RoleGuard>
+          }
+        />
+
+        {/* All roles */}
         <Route path="/timetable" element={<Timetable />} />
         <Route path="/ai-prediction" element={<AIPredictionPage />} />
-        <Route path="/notifications" element={<div className="p-8">Notifications & Communication</div>} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/notifications" element={<div className="p-8">Notifications &amp; Communication</div>} />
+
+        {/* Admin only */}
+        <Route
+          path="/settings"
+          element={
+            <RoleGuard allowedRoles={['admin']}>
+              <Settings />
+            </RoleGuard>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
