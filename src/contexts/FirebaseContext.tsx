@@ -18,7 +18,7 @@ interface FirebaseContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   authError: string | null;
-  signInWithEmail: (email: string, password: string, role: UserRole) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -66,7 +66,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const clearError = () => setAuthError(null);
 
   /** Email/password sign-in — creates account if user doesn't exist */
-  const signInWithEmail = async (email: string, password: string, role: UserRole) => {
+  const signInWithEmail = async (email: string, password: string) => {
     setAuthError(null);
     try {
       // Try signing in first
@@ -87,7 +87,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const newProfile: UserProfile = {
             uid: credential.user.uid,
             email: credential.user.email || '',
-            role: role,
+            role: 'student', // Default role — only admins can change
             fullName: displayName,
           };
           await setDoc(doc(db, 'users', credential.user.uid), newProfile);

@@ -5,14 +5,13 @@ import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { cn } from '../lib/utils';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { UserRole } from '../types';
 
 export const Login: React.FC = () => {
   const [method, setMethod] = React.useState<'email' | 'phone' | 'studentId'>('email');
   const [consent, setConsent] = React.useState(false);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [role, setRole] = React.useState<UserRole>('admin');
+
   const [isLoading, setIsLoading] = React.useState(false);
   const { user, signInWithEmail, signInWithGoogle, authError, clearError } = useFirebase();
   const navigate = useNavigate();
@@ -25,7 +24,7 @@ export const Login: React.FC = () => {
     e.preventDefault();
     if (!consent) return;
     setIsLoading(true);
-    await signInWithEmail(email, password, role);
+    await signInWithEmail(email, password);
     setIsLoading(false);
   };
 
@@ -114,19 +113,7 @@ export const Login: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Login as</label>
-              <select 
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
-              >
-                <option value="admin">Administrator</option>
-                <option value="teacher">Teacher</option>
-                <option value="parent">Parent</option>
-                <option value="student">Student</option>
-              </select>
-            </div>
+
 
             <div className="flex items-start gap-3">
               <input 
