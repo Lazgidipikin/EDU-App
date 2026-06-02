@@ -74,7 +74,7 @@ function AppRoutes() {
         {/* All roles */}
         <Route path="/timetable" element={<Timetable />} />
         <Route path="/ai-prediction" element={<AIPredictionPage />} />
-        <Route path="/notifications" element={<div className="p-8">Notifications &amp; Communication</div>} />
+        <Route path="/notifications" element={<div className="p-8">Notifications & Communication</div>} />
 
         {/* Admin only */}
         <Route
