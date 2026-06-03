@@ -1,137 +1,69 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  onAuthStateChanged,
-  User,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  updateProfile,
-  signOut,
-} from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from '../firebase';
+import { db } from '../firebase';
 import { UserProfile, UserRole } from '../types';
 
 interface FirebaseContextType {
-  user: User | null;
-  userProfile: UserProfile | null;
+  userProfile: UserProfile;
   loading: boolean;
-  authError: string | null;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
-  clearError: () => void;
+  setRole: (role: UserRole) => void;
+  logout: () => void;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
 
+const DEFAULT_PROFILES: Record<UserRole, UserProfile> = {
+  admin: {
+    uid: 'demo-admin',
+    email: 'admin@school.com',
+    role: 'admin',
+    fullName: 'Admin User',
+  },
+  teacher: {
+    uid: 'demo-teacher',
+    email: 'teacher@school.com',
+    role: 'teacher',
+    fullName: 'Teacher User',
+  },
+  parent: {
+    uid: 'demo-parent',
+    email: 'parent@school.com',
+    role: 'parent',
+    fullName: 'Parent User',
+  },
+  student: {
+    uid: 'demo-student',
+    email: 'student@school.com',
+    role: 'student',
+    fullName: 'Student User',
+  },
+};
+
 export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILES.admin);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          if (userDoc.exists()) {
-            setUserProfile(userDoc.data() as UserProfile);
-          } else {
-            // Create a default profile for new users
-            const newProfile: UserProfile = {
-              uid: currentUser.uid,
-              email: currentUser.email || '',
-              role: 'student', // Default role
-              fullName: currentUser.displayName || 'New User',
-            };
-            await setDoc(doc(db, 'users', currentUser.uid), newProfile);
-            setUserProfile(newProfile);
-          }
-        } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${currentUser.uid}`);
-        }
-      } else {
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    // Check if a role was previously selected
+    const savedRole = localStorage.getItem('edu-app-role') as UserRole | null;
+    if (savedRole && DEFAULT_PROFILES[savedRole]) {
+      setUserProfile(DEFAULT_PROFILES[savedRole]);
+    }
+    setLoading(false);
   }, []);
 
-  const clearError = () => setAuthError(null);
-
-  /** Email/password sign-in — creates account if user doesn't exist */
-  const signInWithEmail = async (email: string, password: string) => {
-    setAuthError(null);
-    try {
-      // Try signing in first
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      // If user doesn't exist, create account
-      if (
-        error.code === 'auth/user-not-found' ||
-        error.code === 'auth/invalid-credential'
-      ) {
-        try {
-          const credential = await createUserWithEmailAndPassword(auth, email, password);
-          // Set display name from email
-          const displayName = email.split('@')[0].replace(/[._]/g, ' ');
-          await updateProfile(credential.user, { displayName });
-
-          // Create user profile with selected role
-          const newProfile: UserProfile = {
-            uid: credential.user.uid,
-            email: credential.user.email || '',
-            role: 'student', // Default role — only admins can change
-            fullName: displayName,
-          };
-          await setDoc(doc(db, 'users', credential.user.uid), newProfile);
-        } catch (createError: any) {
-          setAuthError(getAuthErrorMessage(createError.code));
-        }
-      } else {
-        setAuthError(getAuthErrorMessage(error.code));
-      }
-    }
+  const setRole = (role: UserRole) => {
+    localStorage.setItem('edu-app-role', role);
+    setUserProfile(DEFAULT_PROFILES[role]);
   };
 
-  /** Google popup sign-in */
-  const signInWithGoogle = async () => {
-    setAuthError(null);
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      setAuthError(getAuthErrorMessage(error.code));
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
+  const logout = () => {
+    localStorage.removeItem('edu-app-role');
+    setUserProfile(DEFAULT_PROFILES.admin);
   };
 
   return (
-    <FirebaseContext.Provider
-      value={{
-        user,
-        userProfile,
-        loading,
-        authError,
-        signInWithEmail,
-        signInWithGoogle,
-        logout,
-        clearError,
-      }}
-    >
+    <FirebaseContext.Provider value={{ userProfile, loading, setRole, logout }}>
       {children}
     </FirebaseContext.Provider>
   );
@@ -144,35 +76,3 @@ export const useFirebase = () => {
   }
   return context;
 };
-
-/** Maps Firebase error codes to user-friendly messages */
-function getAuthErrorMessage(code: string): string {
-  switch (code) {
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
-    case 'auth/user-disabled':
-      return 'This account has been disabled. Contact your administrator.';
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential':
-      return 'Incorrect email or password. Try again or sign up.';
-    case 'auth/email-already-in-use':
-      return 'An account with this email already exists. Try signing in.';
-    case 'auth/weak-password':
-      return 'Password must be at least 6 characters.';
-    case 'auth/too-many-requests':
-      return 'Too many attempts. Please wait a moment and try again.';
-    case 'auth/popup-closed-by-user':
-      return 'Google sign-in was cancelled.';
-    case 'auth/unauthorized-domain':
-      return 'This domain is not authorized. Contact the administrator.';
-    case 'auth/operation-not-allowed':
-      return 'Email/Password sign-in is not enabled. The administrator needs to enable it in Firebase Console.';
-    case 'auth/network-request-failed':
-      return 'Network error. Please check your internet connection and try again.';
-    case 'auth/internal-error':
-      return 'A server error occurred. Please try again later.';
-    default:
-      return `Authentication error (${code}). Please try again.`;
-  }
-}
-

@@ -14,7 +14,7 @@ import { Settings } from './pages/Settings';
 import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
 
 function AppRoutes() {
-  const { user, userProfile, loading } = useFirebase();
+  const { userProfile, loading } = useFirebase();
 
   if (loading) {
     return (
@@ -24,19 +24,11 @@ function AppRoutes() {
     );
   }
 
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
-  }
-
   return (
-    <Layout userRole={userProfile?.role || 'student'}>
+    <Layout userRole={userProfile.role}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/login" element={<Login />} />
 
         {/* Admin + Teacher only */}
         <Route

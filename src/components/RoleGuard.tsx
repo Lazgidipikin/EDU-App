@@ -20,14 +20,9 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   redirectTo = '/',
   children,
 }) => {
-  const { userProfile, loading } = useFirebase();
+  const { userProfile } = useFirebase();
 
-  // Still loading – render nothing (App.tsx loading spinner already handles this)
-  if (loading) return null;
-
-  const role = userProfile?.role ?? 'student';
-
-  if (!allowedRoles.includes(role)) {
+  if (!allowedRoles.includes(userProfile.role)) {
     return <Navigate to={redirectTo} replace />;
   }
 

@@ -26,7 +26,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, userRole }) => {
   const [isSidebarOpen, setSidebarOpen] = React.useState(true);
-  const { userProfile, logout } = useFirebase();
+  const { userProfile } = useFirebase();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -45,7 +45,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, userRole }) => {
   const filteredMenu = menuItems.filter(item => item.roles.includes(userRole));
 
   const handleLogout = async () => {
-    await logout();
     navigate('/login');
   };
 
@@ -91,7 +90,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, userRole }) => {
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5 mr-3" />
-              Sign Out
+              Switch Role
             </Button>
           </div>
         </div>
