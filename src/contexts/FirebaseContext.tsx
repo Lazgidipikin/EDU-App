@@ -165,8 +165,14 @@ function getAuthErrorMessage(code: string): string {
       return 'Google sign-in was cancelled.';
     case 'auth/unauthorized-domain':
       return 'This domain is not authorized. Contact the administrator.';
+    case 'auth/operation-not-allowed':
+      return 'Email/Password sign-in is not enabled. The administrator needs to enable it in Firebase Console.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your internet connection and try again.';
+    case 'auth/internal-error':
+      return 'A server error occurred. Please try again later.';
     default:
-      return 'An unexpected error occurred. Please try again.';
+      return `Authentication error (${code}). Please try again.`;
   }
 }
 
